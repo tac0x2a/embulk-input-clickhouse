@@ -8,6 +8,9 @@ import com.github.jrubygradle.JRubyExec
 repositories {
     mavenCentral()
     jcenter()
+    maven {
+        url "http://dl.bintray.com/embulk-input-jdbc/maven"
+    }
 }
 configurations {
     provided
@@ -23,6 +26,8 @@ dependencies {
     provided "org.embulk:embulk-core:0.9.7"
     // compile "YOUR_JAR_DEPENDENCY_GROUP:YOUR_JAR_DEPENDENCY_MODULE:YOUR_JAR_DEPENDENCY_VERSION"
     testCompile "junit:junit:4.+"
+
+    compile  "org.embulk.input.jdbc:embulk-input-jdbc:0.9.3"
 }
 
 task classpath(type: Copy, dependsOn: ["jar"]) {
