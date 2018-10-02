@@ -1,89 +1,184 @@
 package org.embulk.input.clickhouse;
 
-import java.util.List;
-
 import com.google.common.base.Optional;
 
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.ConfigDiff;
 import org.embulk.config.ConfigSource;
-import org.embulk.config.Task;
 import org.embulk.config.TaskReport;
 import org.embulk.config.TaskSource;
-import org.embulk.spi.Exec;
+import org.embulk.input.jdbc.AbstractJdbcInputPlugin;
+import org.embulk.input.jdbc.JdbcInputConnection;
+import org.embulk.input.jdbc.getter.ColumnGetterFactory;
 import org.embulk.spi.InputPlugin;
+import org.embulk.spi.PageBuilder;
 import org.embulk.spi.PageOutput;
 import org.embulk.spi.Schema;
-import org.embulk.spi.SchemaConfig;
+import org.joda.time.DateTimeZone;
 
-public class ClickhouseInputPlugin
-        implements InputPlugin
-{
-    public interface PluginTask
-            extends Task
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Properties;
+
+import ru.yandex.clickhouse.settings.ClickHouseConnectionSettings;
+
+public class ClickhouseInputPlugin extends AbstractJdbcInputPlugin {
+    public interface ClickHousePluginTask
+        extends AbstractJdbcInputPlugin.PluginTask
     {
-        // configuration option 1 (required integer)
-        @Config("option1")
-        public int getOption1();
-
-        // configuration option 2 (optional string, null is not allowed)
-        @Config("option2")
-        @ConfigDefault("\"myvalue\"")
-        public String getOption2();
-
-        // configuration option 3 (optional string, null is allowed)
-        @Config("option3")
+        @Config("driver_path")
         @ConfigDefault("null")
-        public Optional<String> getOption3();
+        public Optional<String> getDriverPath();
 
-        // if you get schema from config
-        @Config("columns")
-        public SchemaConfig getColumns();
+        @Config("host")
+        public String getHost();
+
+        @Config("port")
+        @ConfigDefault("8123")
+        public int getPort();
+
+        @Config("user")
+        @ConfigDefault("null")
+        public Optional<String> getUser();
+
+        @Config("password")
+        @ConfigDefault("null")
+        public Optional<String> getPassword();
+
+        @Config("database")
+        public String getDatabase();
+
+        @Config("buffer_size")
+        @ConfigDefault("65536")
+        public Optional<Integer> getBufferSize();
+
+        @Config("apache_buffer_size")
+        @ConfigDefault("65536")
+        public Optional<Integer> getApacheBufferSize();
+
+        @Config("connect_timeout")
+        @ConfigDefault("30000")
+        public int getConnectTimeout();
+
+        @Config("socket_timeout")
+        @ConfigDefault("10000")
+        public int getSocketTimeout();
+
+        /**
+         * Timeout for data transfer. socketTimeout + dataTransferTimeout is sent to ClickHouse as max_execution_time.
+         * ClickHouse rejects request execution if its time exceeds max_execution_time
+         */
+        @Config("data_transfer_timeout")
+        @ConfigDefault("10000")
+        public Optional<Integer> getDataTransferTimeout();
+
+        @Config("keep_alive_timeout")
+        @ConfigDefault("30000")
+        public Optional<Integer> getKeepAliveTimeout();
     }
 
     @Override
-    public ConfigDiff transaction(ConfigSource config,
-            InputPlugin.Control control)
+    protected Class<? extends AbstractJdbcInputPlugin.PluginTask> getTaskClass()
     {
-        PluginTask task = config.loadConfig(PluginTask.class);
+        return ClickHousePluginTask.class;
+    }
 
-        Schema schema = task.getColumns().toSchema();
-        int taskCount = 1;  // number of run() method calls
 
-        return resume(task.dump(), schema, taskCount, control);
+    @Override
+    protected JdbcInputConnection newConnection(AbstractJdbcInputPlugin.PluginTask task) throws SQLException {
+        final String DriverClass = "ru.yandex.clickhouse.ClickHouseDriver";
+
+        ClickHousePluginTask t = (ClickHousePluginTask) task;
+
+
+        loadDriver(DriverClass, t.getDriverPath());
+
+
+        Properties props = new Properties();
+        if (t.getUser().isPresent()) {
+            props.setProperty("user", t.getUser().get());
+        }
+        if (t.getPassword().isPresent()) {
+            props.setProperty("password", t.getPassword().get());
+        }
+
+        // ClickHouse Connection Options
+        if ( t.getApacheBufferSize().isPresent()){
+            props.setProperty(ClickHouseConnectionSettings.APACHE_BUFFER_SIZE.getKey(), String.valueOf(t.getApacheBufferSize().get())); // byte?
+        }
+        if ( t.getBufferSize().isPresent()){
+            props.setProperty(ClickHouseConnectionSettings.BUFFER_SIZE.getKey(), String.valueOf(t.getBufferSize().get())); // byte?
+        }
+        if ( t.getDataTransferTimeout().isPresent() ){
+            props.setProperty(ClickHouseConnectionSettings.DATA_TRANSFER_TIMEOUT.getKey(), String.valueOf(t.getDataTransferTimeout().get())); // seconds
+        }
+        if ( t.getKeepAliveTimeout().isPresent() ){
+            props.setProperty(ClickHouseConnectionSettings.KEEP_ALIVE_TIMEOUT.getKey(), String.valueOf(t.getKeepAliveTimeout().get())); // seconds
+        }
+
+        props.setProperty(ClickHouseConnectionSettings.SOCKET_TIMEOUT.getKey(), String.valueOf(t.getSocketTimeout())); // seconds
+        props.setProperty(ClickHouseConnectionSettings.CONNECTION_TIMEOUT.getKey(), String.valueOf(t.getConnectTimeout())); // seconds
+        props.putAll(t.getOptions());
+
+        final String url = String.format("jdbc:clickhouse://%s:%d/%s", t.getHost(), t.getPort(), t.getDatabase());
+
+        logConnectionProperties(url, props);
+
+        Connection con = DriverManager.getConnection(url, props);
+        try {
+            ClickHouseInputConnection c = new ClickHouseInputConnection(con, null);
+            con = null;
+            return c;
+        } finally {
+            if (con != null) {
+                con.close();
+            }
+        }
     }
 
     @Override
-    public ConfigDiff resume(TaskSource taskSource,
-            Schema schema, int taskCount,
-            InputPlugin.Control control)
+    protected ColumnGetterFactory newColumnGetterFactory(PageBuilder pageBuilder, DateTimeZone dateTimeZone)
     {
-        control.run(taskSource, schema, taskCount);
-        return Exec.newConfigDiff();
+        return new ClickHouseColumnGetterFactory(pageBuilder, dateTimeZone);
     }
 
     @Override
-    public void cleanup(TaskSource taskSource,
-            Schema schema, int taskCount,
-            List<TaskReport> successTaskReports)
+    public ConfigDiff transaction(ConfigSource config, InputPlugin.Control control)
     {
+        // TBD
+        return super.transaction(config, control);
     }
 
     @Override
-    public TaskReport run(TaskSource taskSource,
-            Schema schema, int taskIndex,
-            PageOutput output)
+    public ConfigDiff resume(TaskSource taskSource, Schema schema, int taskCount, InputPlugin.Control control)
+    {
+        // TBD
+        return super.resume(taskSource, schema, taskCount, control);
+    }
+
+    @Override
+    public void cleanup(TaskSource taskSource, Schema schema, int taskCount, List<TaskReport> successTaskReports)
+    {
+        //TBD
+        super.cleanup(taskSource, schema, taskCount, successTaskReports);
+    }
+
+    @Override
+    public TaskReport run(TaskSource taskSource, Schema schema, int taskIndex, PageOutput output)
     {
         PluginTask task = taskSource.loadTask(PluginTask.class);
 
-        // Write your code here :)
-        throw new UnsupportedOperationException("ClickhouseInputPlugin.run method is not implemented yet");
+        //TBD
+        return super.run(taskSource, schema, taskIndex, output);
     }
 
     @Override
     public ConfigDiff guess(ConfigSource config)
     {
-        return Exec.newConfigDiff();
+        //TBD
+        return super.guess(config);
     }
 }

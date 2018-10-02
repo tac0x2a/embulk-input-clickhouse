@@ -24,10 +24,11 @@ targetCompatibility = 1.8
 dependencies {
     compile  "org.embulk:embulk-core:0.9.7"
     provided "org.embulk:embulk-core:0.9.7"
-    // compile "YOUR_JAR_DEPENDENCY_GROUP:YOUR_JAR_DEPENDENCY_MODULE:YOUR_JAR_DEPENDENCY_VERSION"
     testCompile "junit:junit:4.+"
 
-    compile  "org.embulk.input.jdbc:embulk-input-jdbc:0.9.3"
+    compile "org.embulk.input.jdbc:embulk-input-jdbc:0.9.3"
+    compile "ru.yandex.clickhouse:clickhouse-jdbc:0.1.41"
+    compile "com.google.code.gson:gson:2.8.5"
 }
 
 task classpath(type: Copy, dependsOn: ["jar"]) {
