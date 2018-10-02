@@ -81,11 +81,11 @@ Gem::Specification.new do |spec|
   spec.name          = "${project.name}"
   spec.version       = "${project.version}"
   spec.authors       = ["TAC"]
-  spec.summary       = %[Clickhouse input plugin for Embulk]
+  spec.summary       = %[ClickHouse input plugin for Embulk]
   spec.description   = %[Loads records from Clickhouse.]
   spec.email         = ["tac@tac42.net"]
   spec.licenses      = ["MIT"]
-  # TODO set this: spec.homepage      = "https://github.com/tac/embulk-input-clickhouse"
+  spec.homepage      = "https://github.com/tac0x2a/embulk-input-clickhouse"
 
   spec.files         = `git ls-files`.split("\n") + Dir["classpath/*.jar"]
   spec.test_files    = spec.files.grep(%r"^(test|spec)/")
