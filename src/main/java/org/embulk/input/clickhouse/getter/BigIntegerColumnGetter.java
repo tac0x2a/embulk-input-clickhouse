@@ -17,7 +17,8 @@ import java.sql.SQLException;
 
 import ru.yandex.clickhouse.response.ClickHouseResultSet;
 
-public class BigIntegerColumnGetter extends AbstractColumnGetter {
+public class BigIntegerColumnGetter extends AbstractColumnGetter
+{
 
     protected BigInteger value;
 
@@ -26,31 +27,36 @@ public class BigIntegerColumnGetter extends AbstractColumnGetter {
 
     private String originalColumnTypeName;
 
-    public BigIntegerColumnGetter(PageBuilder to, Type toType, String originalColumnTypeName) {
+    public BigIntegerColumnGetter(PageBuilder to, Type toType, String originalColumnTypeName)
+    {
         super(to, toType);
         this.originalColumnTypeName = originalColumnTypeName;
     }
 
     @Override
-    protected void fetch(ResultSet from, int fromIndex) throws SQLException {
-        ClickHouseResultSet chFrom = (ClickHouseResultSet)from;
-        value = (BigInteger)chFrom.getObject(fromIndex);
+    protected void fetch(ResultSet from, int fromIndex) throws SQLException
+    {
+        ClickHouseResultSet chFrom = (ClickHouseResultSet) from;
+        value = (BigInteger) chFrom.getObject(fromIndex);
     }
 
     @Override
-    protected Type getDefaultToType() {
+    protected Type getDefaultToType()
+    {
         // In default, this ColumnGetter try to convert BigInteger value to Long value.
         // If value is too big for Long type, please choose Type.String or Type.JSON
         return Types.LONG;
     }
 
     @Override
-    public void longColumn(Column column){
+    public void longColumn(Column column)
+    {
         try {
 
             to.setLong(column, Long.parseLong(value.toString()));
 
-        }catch(NumberFormatException e){
+        }
+        catch (NumberFormatException e) {
             throw new NumberFormatException(
                     String.format(
                             "%s In '%s %s' is too large for Long type. \n" +
@@ -70,12 +76,14 @@ public class BigIntegerColumnGetter extends AbstractColumnGetter {
     }
 
     @Override
-    public void stringColumn(Column column){
+    public void stringColumn(Column column)
+    {
         to.setString(column, value.toString());
     }
 
     @Override
-    public void jsonColumn(Column column){
+    public void jsonColumn(Column column)
+    {
         try {
             String jsonString = gson.toJson(value.toString());
             Value v = jsonParser.parse(jsonString);

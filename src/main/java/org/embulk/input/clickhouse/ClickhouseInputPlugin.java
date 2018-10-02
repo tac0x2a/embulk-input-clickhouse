@@ -25,7 +25,8 @@ import java.util.Properties;
 
 import ru.yandex.clickhouse.settings.ClickHouseConnectionSettings;
 
-public class ClickhouseInputPlugin extends AbstractJdbcInputPlugin {
+public class ClickhouseInputPlugin extends AbstractJdbcInputPlugin
+{
     public interface ClickHousePluginTask
         extends AbstractJdbcInputPlugin.PluginTask
     {
@@ -86,16 +87,14 @@ public class ClickhouseInputPlugin extends AbstractJdbcInputPlugin {
         return ClickHousePluginTask.class;
     }
 
-
     @Override
-    protected JdbcInputConnection newConnection(AbstractJdbcInputPlugin.PluginTask task) throws SQLException {
-        final String DriverClass = "ru.yandex.clickhouse.ClickHouseDriver";
+    protected JdbcInputConnection newConnection(AbstractJdbcInputPlugin.PluginTask task) throws SQLException
+    {
+        final String driverClass = "ru.yandex.clickhouse.ClickHouseDriver";
 
         ClickHousePluginTask t = (ClickHousePluginTask) task;
 
-
-        loadDriver(DriverClass, t.getDriverPath());
-
+        loadDriver(driverClass, t.getDriverPath());
 
         Properties props = new Properties();
         if (t.getUser().isPresent()) {
@@ -106,16 +105,16 @@ public class ClickhouseInputPlugin extends AbstractJdbcInputPlugin {
         }
 
         // ClickHouse Connection Options
-        if ( t.getApacheBufferSize().isPresent()){
+        if (t.getApacheBufferSize().isPresent()) {
             props.setProperty(ClickHouseConnectionSettings.APACHE_BUFFER_SIZE.getKey(), String.valueOf(t.getApacheBufferSize().get())); // byte?
         }
-        if ( t.getBufferSize().isPresent()){
+        if (t.getBufferSize().isPresent()) {
             props.setProperty(ClickHouseConnectionSettings.BUFFER_SIZE.getKey(), String.valueOf(t.getBufferSize().get())); // byte?
         }
-        if ( t.getDataTransferTimeout().isPresent() ){
+        if (t.getDataTransferTimeout().isPresent()) {
             props.setProperty(ClickHouseConnectionSettings.DATA_TRANSFER_TIMEOUT.getKey(), String.valueOf(t.getDataTransferTimeout().get())); // seconds
         }
-        if ( t.getKeepAliveTimeout().isPresent() ){
+        if (t.getKeepAliveTimeout().isPresent()) {
             props.setProperty(ClickHouseConnectionSettings.KEEP_ALIVE_TIMEOUT.getKey(), String.valueOf(t.getKeepAliveTimeout().get())); // seconds
         }
 
@@ -132,7 +131,8 @@ public class ClickhouseInputPlugin extends AbstractJdbcInputPlugin {
             ClickHouseInputConnection c = new ClickHouseInputConnection(con, null);
             con = null;
             return c;
-        } finally {
+        }
+        finally {
             if (con != null) {
                 con.close();
             }
