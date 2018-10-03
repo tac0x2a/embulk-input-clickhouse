@@ -2,6 +2,8 @@ package org.embulk.input.clickhouse.getter;
 
 import com.google.gson.Gson;
 
+import net.tac42.clickhouse.response.ClickHouseResultSet;
+
 import org.embulk.input.jdbc.getter.AbstractColumnGetter;
 import org.embulk.spi.Column;
 import org.embulk.spi.PageBuilder;
@@ -14,8 +16,6 @@ import org.msgpack.value.Value;
 import java.math.BigInteger;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
-import ru.yandex.clickhouse.response.ClickHouseResultSet;
 
 public class BigIntegerColumnGetter extends AbstractColumnGetter
 {

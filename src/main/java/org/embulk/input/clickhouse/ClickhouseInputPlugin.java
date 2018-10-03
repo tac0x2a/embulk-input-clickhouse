@@ -2,6 +2,8 @@ package org.embulk.input.clickhouse;
 
 import com.google.common.base.Optional;
 
+import net.tac42.clickhouse.settings.ClickHouseConnectionSettings;
+
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.ConfigDiff;
@@ -22,8 +24,6 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
-
-import ru.yandex.clickhouse.settings.ClickHouseConnectionSettings;
 
 public class ClickhouseInputPlugin extends AbstractJdbcInputPlugin
 {
@@ -90,7 +90,8 @@ public class ClickhouseInputPlugin extends AbstractJdbcInputPlugin
     @Override
     protected JdbcInputConnection newConnection(AbstractJdbcInputPlugin.PluginTask task) throws SQLException
     {
-        final String driverClass = "ru.yandex.clickhouse.ClickHouseDriver";
+        //final String driverClass = "ru.yandex.clickhouse.ClickHouseDriver";
+        final String driverClass = "net.tac42.clickhouse.ClickHouseDriver";
 
         ClickHousePluginTask t = (ClickHousePluginTask) task;
 

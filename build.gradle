@@ -11,12 +11,15 @@ repositories {
     maven {
         url "http://dl.bintray.com/embulk-input-jdbc/maven"
     }
+    maven {
+        url "https://dl.bintray.com/tac0x2a/click-house-jdbc-exp"
+    }
 }
 configurations {
     provided
 }
 
-version = "0.1.0"
+version = "0.1.1"
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -27,7 +30,7 @@ dependencies {
     testCompile "junit:junit:4.+"
 
     compile "org.embulk.input.jdbc:embulk-input-jdbc:0.9.3"
-    compile "ru.yandex.clickhouse:clickhouse-jdbc:0.1.41"
+    compile "net.tac42.clickhouse:clickhouse-jdbc-exp:0.1.42"
     compile "com.google.code.gson:gson:2.8.5"
 }
 
